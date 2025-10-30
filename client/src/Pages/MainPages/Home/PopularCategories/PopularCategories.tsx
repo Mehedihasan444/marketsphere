@@ -38,7 +38,7 @@ const PopularCategories = () => {
     ];
 
     return (
-        <div className="my-8 max-w-7xl mx-auto ">
+        <div className="my-8 max-w-7xl mx-auto px-4 lg:px-0">
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl md:text-3xl font-bold">Popular Categories</h2>

@@ -1,8 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { Alert, Button, Progress, Skeleton } from "antd";
+import { Alert, Button, Empty, Progress, Skeleton } from "antd";
 import ProductCard from "../../../../Components/Shared/ProductCard";
-import { TProduct } from "../../../../Interface";
 import Countdown from "react-countdown";
 import { useGetFlashSaleProductsQuery } from "../../../../Redux/Features/FlashSale/flashSaleApi";
 import { useNavigate } from "react-router-dom";
@@ -11,13 +10,19 @@ import { motion } from "framer-motion";
 
 const FlashSale = () => {
   const navigate = useNavigate();
-  const { data = {}, isLoading, error } = useGetFlashSaleProductsQuery("");
-  const products = data?.data || [];
+  const { data = {}, isLoading, error } = useGetFlashSaleProductsQuery({
+    sortBy: 'discount',
+  });
+
+  // Extract products array from nested data structure
+  const products = Array.isArray(data?.data) ? data.data : (data?.data?.data || []);
+  
+
 
   // Loading State
   if (isLoading) {
     return (
-      <div className="bg-gradient-to-r from-red-50 to-orange-50 mx-3  p-8 rounded-2xl shadow-lg mt-10">
+      <div className="max-w-7xl mx-auto bg-white p-8 mt-10">
         <div className="flex justify-between items-center mb-8">
           <Skeleton.Input style={{ width: 250 }} active />
           <Skeleton.Button style={{ width: 180 }} active />
@@ -30,7 +35,7 @@ const FlashSale = () => {
             <Skeleton.Input style={{ width: 150, marginTop: 12 }} active />
             <Skeleton.Input style={{ width: 250, marginTop: 16 }} active />
           </div>
-          <div className="w-full lg:w-2/3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="w-full lg:w-2/3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {Array(8).fill(0).map((_, index) => (
               <Skeleton key={index} active className="h-64" />
             ))}
@@ -43,7 +48,7 @@ const FlashSale = () => {
   // Error State
   if (error) {
     return (
-      <div className="flex justify-center items-center h-[50vh]">
+      <div className="max-w-7xl mx-auto mt-10">
         <Alert
           message="Error Loading Products"
           description="We encountered an issue while loading Flash Sale products. Please try again later."
@@ -54,26 +59,55 @@ const FlashSale = () => {
     );
   }
 
+  // No products available
+  if (!products || products.length === 0) {
+    return (
+      <div className="max-w-7xl mx-auto bg-white p-8 rounded-xl mt-10">
+        <Empty
+          description="No flash sale products available at the moment"
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+        />
+      </div>
+    );
+  }
+
   // Highlighted Product: Product with the highest discount
-  const highlightedProduct = products.find((product: any): boolean =>
-    product.discount >= Math.max(...products.map((p: TProduct): number => p.discount))
-  );
+  const highlightedProduct = products?.reduce((prev: any, current: any) => {
+    return (current.flashSaleDiscount > prev.flashSaleDiscount) ? current : prev;
+  }, products[0]);
+
+  // Calculate discounted price
+  const calculateDiscountedPrice = (price: number, discount: number) => {
+    return price - (price * discount / 100);
+  };
+
+  // Calculate sold quantity (mock data - replace with actual sold data if available)
+  const calculateSoldProgress = (quantity: number) => {
+    const mockSold = Math.floor(quantity * 0.6); // 60% sold
+    return {
+      sold: mockSold,
+      total: quantity,
+      percentage: (mockSold / quantity) * 100
+    };
+  };
+
+  const soldData = calculateSoldProgress(highlightedProduct?.quantity || 100);
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="max-w-7xl mx-auto bg-white p-8  mt-10 "
+      className="max-w-7xl mx-auto bg-white p-8 mt-10"
     >
       {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-8">
-        <motion.h2 
+        <motion.h2
           initial={{ x: -20 }}
           animate={{ x: 0 }}
           className="text-3xl font-bold text-gray-800 flex items-center mb-4 md:mb-0"
         >
-          <FaFire className="text-blue-500 mr-3 animate-pulse" /> 
+          <FaFire className="text-blue-500 mr-3 animate-pulse" />
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-500">
             {highlightedProduct?.flashSale?.name || "Flash Sale"}
           </span>
@@ -97,38 +131,41 @@ const FlashSale = () => {
       {/* Content Section */}
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Left Section: Today's Offer */}
-        <motion.div 
+        <motion.div
           whileHover={{ y: -5 }}
           className="w-full lg:w-1/3 bg-white p-6 rounded-xl shadow-md border-t-4 border-blue-500"
         >
           <div className="relative">
             <span className="absolute top-4 left-4 bg-blue-500 text-white text-sm font-bold px-3 py-1 rounded-full z-10 shadow-md">
-              -{highlightedProduct?.discount}% OFF
+              -{highlightedProduct?.flashSaleDiscount}% OFF
             </span>
             <div className="overflow-hidden rounded-lg">
               <motion.img
                 whileHover={{ scale: 1.05 }}
                 transition={{ duration: 0.3 }}
-                src={highlightedProduct?.product.images[0]}
-                alt={highlightedProduct?.product.name}
+                src={highlightedProduct?.images?.[0]}
+                alt={highlightedProduct?.name}
                 className="w-full h-80 object-cover rounded-lg"
               />
             </div>
           </div>
-          
+
           <h3 className="text-gray-800 text-xl font-bold mt-6 line-clamp-2">
-            {highlightedProduct?.product.name}
+            {highlightedProduct?.name}
           </h3>
-          
+
           <div className="flex gap-3 items-center mt-3">
             <span className="text-blue-600 text-2xl font-bold">
-              ${(highlightedProduct?.product.price - ((highlightedProduct?.product.price * highlightedProduct?.discount) / 100))?.toFixed(2)}
+              ${calculateDiscountedPrice(
+                highlightedProduct?.price || 0,
+                highlightedProduct?.flashSaleDiscount || 0
+              ).toFixed(2)}
             </span>
             <span className="text-gray-400 line-through text-lg">
-              ${highlightedProduct?.product?.price?.toFixed(2)}
+              ${highlightedProduct?.originalPrice?.toFixed(2)}
             </span>
           </div>
-          
+
           <div className="mt-6 bg-gray-50 p-4 rounded-lg">
             <p className="text-gray-700 font-medium mb-3 flex items-center">
               <span className="w-2 h-2 bg-blue-500 rounded-full mr-2 animate-pulse"></span>
@@ -139,77 +176,85 @@ const FlashSale = () => {
             <div className="mt-2">
               <Countdown
                 date={new Date(highlightedProduct?.flashSale?.endDateTime || Date.now())}
-                renderer={({ days, hours, minutes, seconds }) => (
-                  <div className="grid grid-cols-4 gap-2">
-                    <div className="flex flex-col items-center">
-                      <div className="bg-gray-800 w-full py-3 rounded-lg text-center font-bold text-white text-xl shadow-md">
-                        {days}
+                renderer={({ days, hours, minutes, seconds, completed }) => {
+                  if (completed) {
+                    return (
+                      <div className="text-center py-4 text-red-500 font-semibold">
+                        Flash Sale Ended
                       </div>
-                      <span className="text-xs mt-1 text-gray-600">Days</span>
-                    </div>
-                    <div className="flex flex-col items-center">
-                      <div className="bg-gray-800 w-full py-3 rounded-lg text-center font-bold text-white text-xl shadow-md">
-                        {hours < 10 ? `0${hours}` : hours}
+                    );
+                  }
+                  return (
+                    <div className="grid grid-cols-4 gap-2">
+                      <div className="flex flex-col items-center">
+                        <div className="bg-gray-800 w-full py-3 rounded-lg text-center font-bold text-white text-xl shadow-md">
+                          {days}
+                        </div>
+                        <span className="text-xs mt-1 text-gray-600">Days</span>
                       </div>
-                      <span className="text-xs mt-1 text-gray-600">Hours</span>
-                    </div>
-                    <div className="flex flex-col items-center">
-                      <div className="bg-gray-800 w-full py-3 rounded-lg text-center font-bold text-white text-xl shadow-md">
-                        {minutes < 10 ? `0${minutes}` : minutes}
+                      <div className="flex flex-col items-center">
+                        <div className="bg-gray-800 w-full py-3 rounded-lg text-center font-bold text-white text-xl shadow-md">
+                          {hours < 10 ? `0${hours}` : hours}
+                        </div>
+                        <span className="text-xs mt-1 text-gray-600">Hours</span>
                       </div>
-                      <span className="text-xs mt-1 text-gray-600">Minutes</span>
-                    </div>
-                    <div className="flex flex-col items-center">
-                      <div className="bg-gray-800 w-full py-3 rounded-lg font-bold text-center text-white text-xl shadow-md">
-                        {seconds < 10 ? `0${seconds}` : seconds}
+                      <div className="flex flex-col items-center">
+                        <div className="bg-gray-800 w-full py-3 rounded-lg text-center font-bold text-white text-xl shadow-md">
+                          {minutes < 10 ? `0${minutes}` : minutes}
+                        </div>
+                        <span className="text-xs mt-1 text-gray-600">Minutes</span>
                       </div>
-                      <span className="text-xs mt-1 text-gray-600">Seconds</span>
+                      <div className="flex flex-col items-center">
+                        <div className="bg-gray-800 w-full py-3 rounded-lg font-bold text-center text-white text-xl shadow-md">
+                          {seconds < 10 ? `0${seconds}` : seconds}
+                        </div>
+                        <span className="text-xs mt-1 text-gray-600">Seconds</span>
+                      </div>
                     </div>
-                  </div>
-                )}
-                onComplete={() => {
-                  console.log('Countdown completed');
+                  );
                 }}
               />
             </div>
           </div>
-          
+
           <div className="mt-6">
             <div className="flex justify-between text-sm text-gray-600 mb-2">
               <span>Selling Fast!</span>
-              <span>{(highlightedProduct?.product.quantity - 20)}/{(highlightedProduct?.product.quantity)} sold</span>
+              <span>{soldData.sold}/{soldData.total} sold</span>
             </div>
             <Progress
-              percent={((highlightedProduct?.product.quantity - 20) / highlightedProduct?.product.quantity) * 100}
+              percent={soldData.percentage}
               status="active"
               strokeColor={{ from: '#1890ff', to: '#4c51bf' }}
               showInfo={false}
             />
           </div>
-          
+
           <motion.button
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
-            className="w-full mt-6 bg-gradient-to-r from-blue-500 to-indigo-500 text-white py-3 rounded-lg font-semibold flex items-center justify-center"
-            onClick={() => navigate(`/product/${highlightedProduct?.product.id}`)}
+            className="w-full mt-6 bg-gradient-to-r from-blue-500 to-indigo-500 text-white py-3 rounded-lg font-semibold flex items-center justify-center hover:from-blue-600 hover:to-indigo-600 transition-all"
+            onClick={() => navigate(`/product/${highlightedProduct?.id}`)}
           >
             Shop Now <FaArrowRight className="ml-2" />
           </motion.button>
         </motion.div>
 
         {/* Right Section: Product Grid */}
-        <div className="w-full lg:w-2/3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
-          {products?.slice(0, 8)?.map((product: any, index: number) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: index * 0.05 }}
-              whileHover={{ y: -5 }}
-            >
-              <ProductCard product={product.product} />
-            </motion.div>
-          ))}
+        <div className="flex flex-1 justify-center items-center w-full">
+          <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {products?.slice(0, 9)?.map((product: any, index: number) => (
+              <motion.div
+                key={product.id || index}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.05 }}
+                whileHover={{ y: -5 }}
+              >
+                <ProductCard product={product} />
+              </motion.div>
+            ))}
+          </div>
         </div>
       </div>
     </motion.div>

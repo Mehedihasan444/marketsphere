@@ -1,5 +1,5 @@
 
-import { Alert, Skeleton, Spin } from "antd";
+import { Alert, Empty, Skeleton, Spin } from "antd";
 import ProductCard from "../../../../Components/Shared/ProductCard";
 import { TProduct } from "../../../../Interface";
 import { useState, useEffect, useRef } from "react";
@@ -87,13 +87,22 @@ const UnAuthorizedUserProducts = () => {
       </div>
 
       {/* Product Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 items-center">
+      <div className="flex justify-center items-center">
+
         {
-          products.length === 0 && <p className="text-gray-500">No products found.</p>
+          products.length === 0 ?
+           <div className="py-20">
+            <Empty
+              description="No featured products available"
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+            />
+          </div> :
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 items-center ">
+              {products?.map((product: TProduct, index: number) => (
+                <ProductCard product={product} key={index} />
+              ))}
+            </div>
         }
-        {products?.map((product: TProduct, index: number) => (
-          <ProductCard product={product} key={index} />
-        ))}
       </div>
 
       {/* Infinite Scroll Loader */}

@@ -39,13 +39,13 @@ const Banner = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="w-full py-4">
+    <div className="w-full lg:py-4">
       <Row gutter={[16, 16]} align="stretch">
         {/* Main Banner */}
         <Col xs={24} sm={24} lg={20}>
           <div className="flex flex-col gap-4 h-full">
             {/* Carousel */}
-            <div className="overflow-hidden sm:rounded-lg shadow h-full">
+            <div className="overflow-hidden lg:rounded-lg shadow h-full">
               <BannerCarousal />
             </div>
 

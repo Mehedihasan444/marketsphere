@@ -10,6 +10,7 @@ import TrendingProducts from "./TrendingProducts/TrendingProducts";
 import Features from "./Features/Features";
 import PopularCategories from "./PopularCategories/PopularCategories";
 import SpecialDeals from "./SpecialDeals/SpecialDeals";
+import FeaturedProducts from "./FeaturedProducts/FeaturedProducts";
 
 
 
@@ -131,7 +132,8 @@ const Home = () => {
 
       {/* categories section */}
       <PopularCategories />
-
+      {/* Featured products section */}
+      <FeaturedProducts />
       {/* Trending Products Carousel */}
       <TrendingProducts />
 
