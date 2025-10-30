@@ -112,7 +112,7 @@ const ProductCard: React.FC<{ product: TProduct }> = ({ product }) => {
               alt={product.name}
               src={product.images[0]}
               style={{ height: 200, objectFit: "cover" }}
-              className="w-full"
+              className="w-full hover:scale-105 transition-transform duration-300"
             />
           </div>
           {/* Discount Badge */}
@@ -212,6 +212,12 @@ const ProductCard: React.FC<{ product: TProduct }> = ({ product }) => {
               <CloseCircleOutlined /> Out of stock
             </Text>
           )}
+        </div>
+        <div style={{ marginTop: 5 }}>
+          <Text type="secondary">
+            <IoCartOutline className="inline-block mr-1" size={16} />
+            {product.soldCount || 0} sold
+          </Text>
         </div>
         <div className="absolute bottom-0 right-0 bg-blue-600 pl-6 pt-6 pr-3 pb-3 rounded-tl-full  cursor-pointer hover:bg-blue-700 transition-colors duration-300 flex items-end">
           <IoCartOutline
