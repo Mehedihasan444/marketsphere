@@ -106,7 +106,7 @@ const ResetPassword = () => {
             <Button
               type="primary"
               htmlType="submit"
-              className="w-full bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              className="w-full bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               Reset Password
             </Button>

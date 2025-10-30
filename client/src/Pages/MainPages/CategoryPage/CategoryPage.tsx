@@ -40,7 +40,7 @@ const CategoryPage = () => {
       .join(' ');
   };
   const displayName = categoryName ? formatCategoryName(categoryName) : 'Category';
-  console.log("categoryName",displayName)
+
   
   const products = data?.data?.data || [];
   const meta = data?.data?.meta;

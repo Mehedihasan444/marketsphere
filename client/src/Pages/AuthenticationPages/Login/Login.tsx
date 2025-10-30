@@ -14,7 +14,7 @@ import { useLoginMutation } from "../../../Redux/Features/Auth/authApi";
 import { useNavigate } from "react-router-dom";
 import { verifyToken } from "../../../Utils/verifyToken";
 import { setUser } from "../../../Redux/Features/Auth/authSlice";
-import { BiArrowBack } from "react-icons/bi";
+// import { BiArrowBack } from "react-icons/bi";
 
 const { Title, Text } = Typography;
 
@@ -118,14 +118,14 @@ const setDefaultValues = (type: keyof typeof defaultCredentials) => {
     // }}
     >
         <div className="flex justify-center items-center max-w-sm mx-auto w-full gap-4">
-        <Button   className="w-full " onClick={() => navigate("/")} iconPosition="start" icon={<BiArrowBack/>}>Back To Home</Button>
+        {/* <Button   className="w-full " onClick={() => navigate("/")} iconPosition="start" icon={<BiArrowBack/>}>Back To Home</Button> */}
        
 
       </div>
       <div className="flex justify-between items-center max-w-lg mx-auto w-full p-4 gap-4">
-        <Button onClick={() => setDefaultValues("admin")}>Admin Credentials</Button>
-        <Button onClick={() => setDefaultValues("vendor")}>Vendor Credentials</Button>
-        <Button onClick={() => setDefaultValues("customer")}>Customer Credentials</Button>
+        <Button className="w-full" onClick={() => setDefaultValues("admin")}>Try Admin</Button>
+        <Button className="w-full" onClick={() => setDefaultValues("vendor")}>Try Vendor</Button>
+        <Button className="w-full" onClick={() => setDefaultValues("customer")}>Try Customer</Button>
 
       </div>
       <div className="p-8 bg-white shadow rounded-lg max-w-sm w-full ">

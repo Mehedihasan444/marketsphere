@@ -216,6 +216,8 @@ export type TProduct = {
   flashSale?: TFlashSale;
   shopId: string;
   shop: TShop;
+  soldCount: number;
+  isFeatured: boolean;
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
