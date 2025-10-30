@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Table, Button, message, Popconfirm, Pagination, Input } from "antd";
-import { DeleteOutlined } from "@ant-design/icons";
+import { DeleteOutlined, SearchOutlined } from "@ant-design/icons";
 import {
   useDeleteProductMutation,
   useGetVendorProductsQuery,
@@ -105,6 +105,16 @@ const ProductManagement = () => {
       title: "Category",
       dataIndex: ["category", "name"], // Assuming category has a `name` property
       key: "category",
+    },{
+      title: "Sold Count",
+      dataIndex: "soldCount",
+      key: "soldCount",
+    },
+    {
+      title: "Featured",
+      dataIndex: "isFeatured",
+      key: "isFeatured",
+      render: (isFeatured: boolean) => (isFeatured ? "Yes" : "No"),
     },
     {
       title: "Actions",
@@ -131,22 +141,31 @@ const ProductManagement = () => {
   return (
     <div>
       <h2 className="text-2xl font-semibold">Manage Products</h2>
-      <div className="flex justify-between items-center gap-5 my-4">
-        {/* Total Count */}
-        <div className="">
-          Total products: <strong>{total || 0}</strong>
-        </div>
-        <div className="">
-          <Input
-            type="text"
-            placeholder="Search by Name"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            allowClear
-          />
-        </div>
-        <ProductModal initialData={null} />
-      </div>
+<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 my-4">
+  {/* Total Count */}
+  <div className="text-sm text-gray-700">
+    Total products: <strong className="text-gray-900">{total || 0}</strong>
+  </div>
+
+  {/* Search Input */}
+  <div className="flex-1 max-w-xs w-full sm:w-auto">
+    <Input
+      type="text"
+      placeholder="Search by name..."
+      value={searchTerm}
+      onChange={(e) => setSearchTerm(e.target.value)}
+      onPressEnter={() => {
+        // Optional: trigger search on Enter
+      }}
+      allowClear
+      prefix={<SearchOutlined className="text-gray-400" />}
+      className="w-full"
+    />
+  </div>
+
+  {/* Add Product Button */}
+  <ProductModal initialData={null} />
+</div>
       <Table
         columns={columns}
         dataSource={products?.map((product: TProduct) => ({

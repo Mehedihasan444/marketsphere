@@ -6,6 +6,7 @@ import { useGetAllCategoriesQuery } from "../../../../Redux/Features/Category/ca
 import { useGetVendorQuery } from "../../../../Redux/Features/Vendor/vendorApi";
 import { useAppSelector } from "../../../../Redux/hook";
 import { FaEdit } from "react-icons/fa";
+import { MdClose } from "react-icons/md";
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -16,58 +17,70 @@ interface ProductModalProps {
 
 const ProductModal: React.FC<ProductModalProps> = ({ initialData }) => {
   const [open, setOpen] = useState(false);
-  const [imageFiles, setImageFiles] = useState<File[]>([]); // Handle multiple images
-  const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]); // Store preview URLs
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]);
+  const [existingImages, setExistingImages] = useState<string[]>([]); // Track existing images
   const [form] = Form.useForm();
-  const [addProduct, { isLoading }] = useAddProductMutation(); // Redux mutation hook for adding
-  const [updateProduct, { isLoading: isUpdating }] = useUpdateProductMutation(); // Redux mutation hook for updating
-  const { data = {} } = useGetAllCategoriesQuery({ page: 1, limit: 10 }); // Redux query hook
+  const [addProduct, { isLoading }] = useAddProductMutation();
+  const [updateProduct, { isLoading: isUpdating }] = useUpdateProductMutation();
+  const { data = {} } = useGetAllCategoriesQuery({ page: 1, limit: 10 });
   const { data: categories = [] } = data.data || {};
   const vendor = useAppSelector((state) => state.auth.user);
-  // Fetch vendor all shops
   const { data: shopData = {} } = useGetVendorQuery(vendor?.email as string);
-
   const { shop: shops = [] } = shopData.data || {};
 
-  // Open modal
   const showModal = () => {
     setImageFiles([]);
     setImagePreviewUrls([]);
+    setExistingImages(initialData?.images || []);
     setOpen(true);
   };
 
-  // Close modal
   const onClose = () => {
     setOpen(false);
     form.resetFields();
-    // Cleanup image preview URLs to prevent memory leaks
     imagePreviewUrls.forEach(url => URL.revokeObjectURL(url));
     setImageFiles([]);
     setImagePreviewUrls([]);
+    setExistingImages([]);
   };
 
-  // Cleanup image preview URLs when component unmounts
   useEffect(() => {
     return () => {
       imagePreviewUrls.forEach(url => URL.revokeObjectURL(url));
     };
   }, [imagePreviewUrls]);
 
-  // Pre-fill form when editing
   useEffect(() => {
     if (initialData) {
-      // Convert features array to comma-separated string for TextArea display
       const formValues = {
         ...initialData,
         features: initialData.features?.join(', ') || '',
       };
       form.setFieldsValue(formValues);
+      setExistingImages(initialData.images || []);
     } else {
       form.resetFields();
+      setExistingImages([]);
     }
   }, [initialData, form]);
 
-  console.log("initialData",initialData)
+  // Handle removing existing images
+  const handleRemoveExistingImage = (indexToRemove: number) => {
+    setExistingImages(prev => prev.filter((_, index) => index !== indexToRemove));
+    message.success("Image removed. Changes will be saved when you update the product.");
+  };
+
+  // Handle removing new images
+  const handleRemoveNewImage = (indexToRemove: number) => {
+    // Revoke the URL to prevent memory leak
+    URL.revokeObjectURL(imagePreviewUrls[indexToRemove]);
+    
+    setImageFiles(prev => prev.filter((_, index) => index !== indexToRemove));
+    setImagePreviewUrls(prev => prev.filter((_, index) => index !== indexToRemove));
+    message.success("New image removed.");
+  };
+
   const handleSubmit = async (values: {
     name: string;
     description: string;
@@ -79,12 +92,12 @@ const ProductModal: React.FC<ProductModalProps> = ({ initialData }) => {
     shopId: string;
     brand?: string | null;
     color?: string[];
+    isFeatured?: boolean;
     size?: string[];
     features?: string[] | string;
   }) => {
     const formData = new FormData();
 
-    // Ensure features is an array (could be string if user didn't blur the field)
     let featuresArray: string[] = [];
     if (typeof values.features === 'string') {
       featuresArray = values.features.split(',').map(feature => feature.trim()).filter(Boolean);
@@ -92,56 +105,53 @@ const ProductModal: React.FC<ProductModalProps> = ({ initialData }) => {
       featuresArray = values.features;
     }
 
-    // Append text fields
     const data = {
       name: values.name,
       description: values.description,
       price: values.price,
       discount: values.discount,
       quantity: values.quantity,
-      rating: values.rating || 0, // Default rating to 0
+      rating: values.rating || 0,
       categoryId: values.categoryId,
       shopId: values.shopId,
       brand: values.brand || null,
       color: values.color || [],
+      isFeatured: values.isFeatured || false,
       size: values.size || [],
       features: featuresArray,
+      // Include existing images when updating
+      ...(initialData && { images: existingImages })
     };
+    
     formData.append("data", JSON.stringify(data));
-console.log(data)
-    // Append image files (only if new images are selected)
+
     if (imageFiles.length > 0) {
       imageFiles.forEach((file) => formData.append("images", file));
     }
 
     try {
       let res;
-      
-      // Use updateProduct if editing, addProduct if creating new
+
       if (initialData) {
         res = await updateProduct({ id: initialData.id, body: formData });
       } else {
         res = await addProduct(formData);
       }
-      
+
       if (res?.data?.success) {
         message.success(
           initialData
             ? "Product updated successfully!"
             : "Product added successfully!"
         );
-        onClose(); // Close modal on success
+        onClose();
       } else if (res?.error) {
-
         if ('data' in res.error) {
-          // For FetchBaseQueryError, safely access the `data` property
           const errorMessage = (res.error.data as { message?: string })?.message || "Failed to add product.";
           message.error(errorMessage);
         } else if ('message' in res.error) {
-          // For SerializedError, handle the `message` property
           message.error(res.error.message || "Failed to add product.");
         } else {
-          // Handle unknown error types
           message.error("An unknown error occurred.");
         }
       }
@@ -150,6 +160,8 @@ console.log(data)
       message.error("An error occurred while processing the product.");
     }
   };
+
+  const totalImages = existingImages.length + imagePreviewUrls.length;
 
   return (
     <>
@@ -162,10 +174,10 @@ console.log(data)
         title={initialData ? "Edit Product" : "Add Product"}
         open={open}
         onCancel={onClose}
-        footer={null} // Footer is replaced with form buttons
+        footer={null}
+        width={700}
       >
         <div className="p-4">
-
           <Form
             form={form}
             layout="vertical"
@@ -176,148 +188,121 @@ console.log(data)
             }}
           >
             {/* Product Images */}
-            <Form.Item 
-              name="images" 
+            <Form.Item
+              name="images"
               label={
                 <span className="text-sm font-medium">
-                  Product Images 
+                  Product Images
                   <span className="text-gray-400 text-xs ml-2">(Max 5 images, 5MB each)</span>
                 </span>
               }
-              rules={[{ required: false, message: "Please select product images!" }]}
             >
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {/* Image Previews */}
-                {imagePreviewUrls.length > 0 || (initialData?.images && initialData.images.length > 0) ? (
-                  <>
-                    {/* Show existing images first (when editing) */}
-                    {initialData?.images && imagePreviewUrls.length === 0 && initialData.images.map((image, index) => (
-                      <div
-                        key={`existing-image-${index}`}
-                        className="relative group overflow-hidden rounded-lg border-2 border-gray-200 hover:border-gray-300 transition-colors"
-                      >
-                        <div className="aspect-square">
-                          <img
-                            src={image}
-                            alt={initialData.name}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        {index === 0 && (
-                          <div className="absolute top-1 left-1 bg-green-500 text-white text-xs px-2 py-0.5 rounded">
-                            Primary
-                          </div>
-                        )}
+                {/* Existing Images with Delete Button */}
+                {existingImages.map((image, index) => (
+                  <div
+                    key={`existing-image-${index}`}
+                    className="relative group overflow-hidden rounded-lg border-2 border-gray-200 hover:border-gray-300 transition-colors"
+                  >
+                    <div className="aspect-square">
+                      <img
+                        src={image}
+                        alt={`Existing ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    {index === 0 && (
+                      <div className="absolute top-1 left-1 bg-green-500 text-white text-xs px-2 py-0.5 rounded">
+                        Primary
                       </div>
-                    ))}
-                    
-                    {/* Show existing images + new images together when editing and new images are added */}
-                    {initialData?.images && imagePreviewUrls.length > 0 && (
-                      <>
-                        {initialData.images.map((image, index) => (
-                          <div
-                            key={`existing-image-${index}`}
-                            className="relative group overflow-hidden rounded-lg border-2 border-gray-200 hover:border-gray-300 transition-colors"
-                          >
-                            <div className="aspect-square">
-                              <img
-                                src={image}
-                                alt={initialData.name}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                            {index === 0 && (
-                              <div className="absolute top-1 left-1 bg-green-500 text-white text-xs px-2 py-0.5 rounded">
-                                Primary
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                        {imagePreviewUrls.map((url, index) => (
-                          <div
-                            key={`new-image-${index}`}
-                            className="relative group overflow-hidden rounded-lg border-2 border-dashed border-blue-300 bg-blue-50"
-                          >
-                            <div className="aspect-square">
-                              <img
-                                src={url}
-                                alt={`New ${index + 1}`}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                            <div className="absolute top-1 right-1 bg-blue-500 text-white text-xs px-2 py-0.5 rounded">
-                              New
-                            </div>
-                          </div>
-                        ))}
-                      </>
                     )}
-                    
-                    {/* Show only new images when creating new product */}
-                    {!initialData && imagePreviewUrls.length > 0 && imagePreviewUrls.map((url, index) => (
-                      <div
-                        key={`new-image-${index}`}
-                        className="relative group overflow-hidden rounded-lg border-2 border-dashed border-blue-300 bg-blue-50"
-                      >
-                        <div className="aspect-square">
-                          <img
-                            src={url}
-                            alt={`Preview ${index + 1}`}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div className="absolute top-1 right-1 bg-blue-500 text-white text-xs px-2 py-0.5 rounded">
-                          New
-                        </div>
-                      </div>
-                    ))}
-                    
-                    {/* Add More Button - show if total images < 5 */}
-                    {((initialData?.images?.length || 0) + imagePreviewUrls.length) < 5 && (
-                      <label className="relative aspect-square rounded-lg border-2 border-dashed border-gray-300 hover:border-blue-400 cursor-pointer bg-gray-50 hover:bg-blue-50 transition-all flex items-center justify-center group">
-                        <input
-                          type="file"
-                          multiple
-                          accept="image/*"
-                          style={{ display: 'none' }}
-                          onChange={(e) => {
-                            if (e.target.files && e.target.files.length > 0) {
-                              const files = Array.from(e.target.files);
-                              const currentTotal = (initialData?.images?.length || 0) + imagePreviewUrls.length;
-                              const remainingSlots = 5 - currentTotal;
-                              
-                              if (files.length > remainingSlots) {
-                                message.warning(`You can only upload ${remainingSlots} more image(s).`);
-                                return;
-                              }
-                              
-                              const maxSize = 5 * 1024 * 1024;
-                              const validFiles = files.filter(file => {
-                                if (file.size > maxSize) {
-                                  message.warning(`${file.name} is too large. Maximum size is 5MB.`);
-                                  return false;
-                                }
-                                return true;
-                              });
+                    {/* Delete Button */}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveExistingImage(index)}
+                      className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                      title="Remove image"
+                    >
+                      <MdClose size={16} />
+                    </button>
+                  </div>
+                ))}
 
-                              if (validFiles.length > 0) {
-                                setImageFiles([...imageFiles, ...validFiles]);
-                                const newUrls = validFiles.map(file => URL.createObjectURL(file));
-                                setImagePreviewUrls([...imagePreviewUrls, ...newUrls]);
-                                message.success(`${validFiles.length} image(s) added!`);
-                              }
+                {/* New Images with Delete Button */}
+                {imagePreviewUrls.map((url, index) => (
+                  <div
+                    key={`new-image-${index}`}
+                    className="relative group overflow-hidden rounded-lg border-2 border-dashed border-blue-300 bg-blue-50"
+                  >
+                    <div className="aspect-square">
+                      <img
+                        src={url}
+                        alt={`New ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="absolute top-1 left-1 bg-blue-500 text-white text-xs px-2 py-0.5 rounded">
+                      New
+                    </div>
+                    {/* Delete Button */}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveNewImage(index)}
+                      className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                      title="Remove image"
+                    >
+                      <MdClose size={16} />
+                    </button>
+                  </div>
+                ))}
+
+                {/* Add More Button */}
+                {totalImages < 5 && (
+                  <label className="relative aspect-square rounded-lg border-2 border-dashed border-gray-300 hover:border-blue-400 cursor-pointer bg-gray-50 hover:bg-blue-50 transition-all flex items-center justify-center group">
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files.length > 0) {
+                          const files = Array.from(e.target.files);
+                          const remainingSlots = 5 - totalImages;
+
+                          if (files.length > remainingSlots) {
+                            message.warning(`You can only upload ${remainingSlots} more image(s).`);
+                            return;
+                          }
+
+                          const maxSize = 5 * 1024 * 1024;
+                          const validFiles = files.filter(file => {
+                            if (file.size > maxSize) {
+                              message.warning(`${file.name} is too large. Maximum size is 5MB.`);
+                              return false;
                             }
-                          }}
-                        />
-                        <div className="text-center">
-                          <div className="text-3xl text-gray-400 group-hover:text-blue-500 mb-1">+</div>
-                          <div className="text-xs text-gray-500">{imagePreviewUrls.length > 0 || initialData ? 'Add More' : 'Upload'}</div>
-                        </div>
-                      </label>
-                    )}
-                  </>
-                ) : (
-                  // Initial upload area
+                            return true;
+                          });
+
+                          if (validFiles.length > 0) {
+                            setImageFiles([...imageFiles, ...validFiles]);
+                            const newUrls = validFiles.map(file => URL.createObjectURL(file));
+                            setImagePreviewUrls([...imagePreviewUrls, ...newUrls]);
+                            message.success(`${validFiles.length} image(s) added!`);
+                          }
+                        }
+                      }}
+                    />
+                    <div className="text-center">
+                      <div className="text-3xl text-gray-400 group-hover:text-blue-500 mb-1">+</div>
+                      <div className="text-xs text-gray-500">
+                        {totalImages > 0 ? 'Add More' : 'Upload'}
+                      </div>
+                    </div>
+                  </label>
+                )}
+
+                {/* Initial upload area when no images */}
+                {totalImages === 0 && (
                   <label className="col-span-2 sm:col-span-3 md:col-span-4 relative rounded-lg border-2 border-dashed border-gray-300 hover:border-blue-400 cursor-pointer bg-gray-50 hover:bg-blue-50 transition-all p-8 flex flex-col items-center justify-center group">
                     <input
                       type="file"
@@ -327,12 +312,12 @@ console.log(data)
                       onChange={(e) => {
                         if (e.target.files && e.target.files.length > 0) {
                           const files = Array.from(e.target.files);
-                          
+
                           if (files.length > 5) {
                             message.warning("You can only upload up to 5 images.");
                             return;
                           }
-                          
+
                           const maxSize = 5 * 1024 * 1024;
                           const validFiles = files.filter(file => {
                             if (file.size > maxSize) {
@@ -363,14 +348,14 @@ console.log(data)
                   </label>
                 )}
               </div>
-              
+
               {/* Status Message */}
-              {(imagePreviewUrls.length > 0 || (initialData?.images && initialData.images.length > 0)) && (
+              {totalImages > 0 && (
                 <p className="text-xs text-gray-500 mt-2">
-                  {imagePreviewUrls.length > 0 && initialData ? (
+                  {initialData && imagePreviewUrls.length > 0 ? (
                     <span className="text-green-600 font-medium">
-                      ✓ Total: {(initialData?.images?.length || 0) + imagePreviewUrls.length} image(s) 
-                      <span className="text-gray-500"> ({initialData?.images?.length || 0} existing + {imagePreviewUrls.length} new)</span>
+                      ✓ Total: {totalImages} image(s)
+                      <span className="text-gray-500"> ({existingImages.length} existing + {imagePreviewUrls.length} new)</span>
                     </span>
                   ) : imagePreviewUrls.length > 0 ? (
                     <span className="text-green-600 font-medium">
@@ -378,7 +363,7 @@ console.log(data)
                     </span>
                   ) : (
                     <span className="text-blue-600">
-                      Current: {initialData?.images?.length || 0} image(s) • Click + to add more
+                      Current: {existingImages.length} image(s) • Click + to add more
                     </span>
                   )}
                 </p>
@@ -394,10 +379,7 @@ console.log(data)
               <Input placeholder="Enter product name" />
             </Form.Item>
 
-
-
             <div className="sm:flex gap-4">
-              {/* Price */}
               <Form.Item
                 name="price"
                 label="Price"
@@ -411,7 +393,6 @@ console.log(data)
                 />
               </Form.Item>
 
-              {/* Quantity */}
               <Form.Item
                 name="quantity"
                 label="Quantity"
@@ -424,7 +405,6 @@ console.log(data)
                 />
               </Form.Item>
 
-              {/* Discount */}
               <Form.Item name="discount" label="Discount">
                 <InputNumber
                   min={0}
@@ -435,18 +415,17 @@ console.log(data)
                 />
               </Form.Item>
             </div>
-            <div className="sm:flex gap-4 w-full">
 
-              {/* Brand */}
+            <div className="sm:flex gap-4 w-full">
               <Form.Item
                 name="brand"
                 className="w-full"
                 label="Brand"
-              rules={[{ required: false, message: "Please enter the brand!" }]}
+                rules={[{ required: false, message: "Please enter the brand!" }]}
               >
                 <Input placeholder="Enter product brand" />
               </Form.Item>
-              {/* Category */}
+
               <Form.Item
                 name="categoryId"
                 label="Category"
@@ -461,7 +440,6 @@ console.log(data)
               </Form.Item>
             </div>
 
-            {/* Shop */}
             <Form.Item
               name="shopId"
               label="Shop"
@@ -474,13 +452,21 @@ console.log(data)
               </Select>
             </Form.Item>
 
+            <Form.Item
+              name="isFeatured"
+              label="Featured Product"
+              valuePropName="checked"
+            >
+              <Select placeholder="Is this a featured product?">
+                <Option value={true}>Yes</Option>
+                <Option value={false}>No</Option>
+              </Select>
+            </Form.Item>
 
-
-            {/* Colors */}
             <Form.Item
               name="color"
               label="Colors"
-            rules={[{ required: false, message: "Please select colors!" }]}
+              rules={[{ required: false, message: "Please select colors!" }]}
             >
               <Select
                 mode="multiple"
@@ -495,11 +481,10 @@ console.log(data)
               </Select>
             </Form.Item>
 
-            {/* Sizes */}
             <Form.Item
               name="size"
               label="Sizes"
-            rules={[{ required: false, message: "Please select sizes!" }]}
+              rules={[{ required: false, message: "Please select sizes!" }]}
             >
               <Select
                 mode="multiple"
@@ -513,7 +498,6 @@ console.log(data)
               </Select>
             </Form.Item>
 
-            {/* Features */}
             <Form.Item
               name="features"
               label="Features"
@@ -523,14 +507,12 @@ console.log(data)
                 placeholder="Enter product features (separated by commas)"
                 rows={4}
                 onBlur={(e) => {
-                  // Convert comma-separated string to array when field loses focus
                   const featuresArray = e.target.value.split(',').map(feature => feature.trim()).filter(Boolean);
                   form.setFieldValue('features', featuresArray);
                 }}
               />
             </Form.Item>
 
-            {/* Description */}
             <Form.Item
               name="description"
               label="Description"
@@ -539,8 +521,6 @@ console.log(data)
               <TextArea placeholder="Enter product description" rows={4} />
             </Form.Item>
 
-
-            {/* Form Buttons */}
             <Form.Item>
               <div className="flex gap-4 justify-end">
                 <Button onClick={onClose}>Cancel</Button>
@@ -552,7 +532,6 @@ console.log(data)
           </Form>
         </div>
       </Modal>
-
     </>
   );
 };
