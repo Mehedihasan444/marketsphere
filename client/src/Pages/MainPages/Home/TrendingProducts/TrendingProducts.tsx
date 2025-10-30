@@ -1,18 +1,18 @@
 import { ChevronRight, ChevronLeft } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import ProductCard from '../../../../Components/Shared/ProductCard';
-import { useGetProductsQuery } from '../../../../Redux/Features/Product/productApi';
+import {  useGetTrendingProductsQuery } from '../../../../Redux/Features/Product/productApi';
 import { TProduct } from '../../../../Interface';
-import { Skeleton } from 'antd';
+import { Empty, Skeleton } from 'antd';
 
 const TrendingProducts = () => {
   const [currentTrendingIndex, setCurrentTrendingIndex] = useState(0);
   const [visibleProducts, setVisibleProducts] = useState<TProduct[]>([]);
-  const { data = {}, isLoading } = useGetProductsQuery({});
+  const { data = {}, isLoading } = useGetTrendingProductsQuery("");
   const { data: trendingProducts = [] } = data?.data || [];
 
   // Number of products to show at once based on screen size
-  const [productsToShow, setProductsToShow] = useState(4);
+  const [productsToShow, setProductsToShow] = useState(5);
 
   // Update products to show based on window size
   useEffect(() => {
@@ -24,7 +24,7 @@ const TrendingProducts = () => {
       } else if (window.innerWidth < 1024) {
         setProductsToShow(3);
       } else {
-        setProductsToShow(4);
+        setProductsToShow(5);
       }
     };
 
@@ -92,7 +92,7 @@ const TrendingProducts = () => {
   if (!trendingProducts) {
     return <div className="py-16 text-center">No trending products available</div>;
   }
-console.log("visibleProducts",visibleProducts)
+
   return (
     <section className="py-16 bg-white ">
       <div className="max-w-7xl mx-auto px-4">
@@ -121,18 +121,27 @@ console.log("visibleProducts",visibleProducts)
             </button>
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+        <div className="flex justify-center items-center py-8 w-full">
           {
-            trendingProducts.length === 0 && <p className="text-gray-500">No trending products found.</p>
+            trendingProducts.length === 0 ?
+              <div className="py-20">
+                <Empty
+                  description="No featured products available"
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                />
+              </div> :
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-5 gap-4  items-center justify-center w-full">
+                {visibleProducts.map((product: TProduct, index: number) => (
+                  <div
+                    key={product.id || index}
+                    className="transition-all duration-300 transform hover:scale-105"
+                  >
+                    <ProductCard product={product} />
+                  </div>
+                ))}
+              </div>
+
           }
-          {visibleProducts.map((product: TProduct, index: number) => (
-            <div
-              key={product.id || index}
-              className="transition-all duration-300 transform hover:scale-105"
-            >
-              <ProductCard product={product} />
-            </div>
-          ))}
         </div>
       </div>
     </section>
