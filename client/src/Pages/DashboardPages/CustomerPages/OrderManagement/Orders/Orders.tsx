@@ -69,12 +69,40 @@ const Orders = () => {
 
         }
     }
+
+    console.log(orders)
     // Columns for Ant Design table
     const columns = [
         {
             title: "Order #",
             dataIndex: "orderNumber",
             key: "orderNumber",
+        },
+        {
+            title: "Items",
+            dataIndex: "orderItems",
+            key: "items",
+            render: (orderItems: any[]) => orderItems?.length,
+        },
+        {
+            title: "Products",
+            dataIndex: "orderItems",
+            key: "products",
+            render: (orderItems: any[]) => (
+                <div>
+                    {orderItems?.map((item) => (
+                        <div key={item.id} className="flex items-center mb-1">
+                            <img
+                                src={item.product?.images?.[0]}
+                                alt={item.product?.name}
+                                className="w-8 h-8 object-cover rounded mr-2 border"
+                            />
+                            <span className="font-medium">{item.product?.name}</span>
+                            <span className="ml-2 text-xs text-gray-500">x{item.quantity}</span>
+                        </div>
+                    ))}
+                </div>
+            ),
         },
         {
             title: "Date",
@@ -127,7 +155,6 @@ const Orders = () => {
             key: "actions",
             render: (_: any, record: TOrder) => (
                 <Space>
-
                     <Button
                         type="primary"
                         loading={isPaying}
@@ -147,7 +174,6 @@ const Orders = () => {
                         Cancel
                     </Button>
                 </Space>
-
             ),
         },
     ];
