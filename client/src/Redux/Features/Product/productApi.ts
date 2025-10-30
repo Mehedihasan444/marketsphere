@@ -73,6 +73,20 @@ export const productApi = baseApi.injectEndpoints({
       },
       providesTags: ["product"],
     }),
+    getTrendingProducts: builder.query({
+      query: () => ({
+        url: "/products/trending",
+        method: "GET",
+      }),
+      providesTags: ["product"],
+    }),
+    getFeaturedProducts: builder.query({
+      query: () => ({
+        url: "/products/featured",
+        method: "GET",
+      }),
+      providesTags: ["product"],
+    }),
     getProductById: builder.query({
       query: (id) => `/products/${id}`,
       providesTags: ["product"],
@@ -106,6 +120,8 @@ export const productApi = baseApi.injectEndpoints({
 export const {
   useGetProductsQuery,
   useGetProductByIdQuery,
+  useGetTrendingProductsQuery,
+  useGetFeaturedProductsQuery,
   useAddProductMutation,
   useUpdateProductMutation,
   useDeleteProductMutation,
