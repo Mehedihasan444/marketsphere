@@ -461,10 +461,24 @@ Things worth knowing, all verified in this repo:
 7. **Client bundle is large.** The main client chunk is ~2.1 MB (644 kB gzipped)
    and Vite warns about it. Consider route-level `React.lazy` / dynamic imports.
 
-8. **Git history is still split.** `client/.git` and `server/.git` are still
-   separate repositories pointing at `marketsphere-frontend` and
-   `marketsphere-backend` on GitHub. The monorepo itself is not yet under version
-   control — see below.
+8. **History was merged, not restarted.** The monorepo is a single repository
+   containing the full history of both originals — all 164 frontend and 87
+   backend commits are ancestors of `main` (255 commits total). Each commit's
+   tree was rewritten with `git filter-repo --to-subdirectory-filter` so its
+   files live under `client/` and `server/`, which means per-file history
+   (`git log -- client/src/App.tsx`) works normally. The two original GitHub
+   repos are now **stale** — do not push to them. Verbatim copies and bare
+   mirrors of both live in
+   `../_marketsphere-archive-20260930/` (see its `ARCHIVE.md`).
+
+9. **No remote is configured yet.** This repo has no `origin`. Create the
+   monorepo on GitHub and then:
+   ```bash
+   git remote add origin <your-monorepo-url>
+   git push -u origin main
+   ```
+   You may want to rename the two old repos to `*-archive` (or archive them on
+   GitHub) so nobody pushes stale history to them.
 
 ---
 
