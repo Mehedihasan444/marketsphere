@@ -1,0 +1,505 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 String     @id @default(uuid())
+  email              String     @unique
+  name               String
+  password           String
+  role               Role       @default(CUSTOMER)
+  status             UserStatus @default(ACTIVE)
+  needPasswordChange Boolean    @default(true)
+  passwordChangedAt  DateTime?
+  isDeleted          Boolean    @default(false)
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+  admin              Admin?
+  customer           Customer?
+  vendor             Vendor?
+
+  @@map("users")
+}
+
+model Admin {
+  id             String           @id @default(uuid())
+  name           String
+  email          String           @unique
+  profilePhoto   String           @default("https://cdn-icons-png.flaticon.com/512/3607/3607444.png")
+  phone          String           @default("")
+  address        String           @default("")
+  user           User             @relation(fields: [email], references: [email], onDelete: Cascade)
+  isDeleted      Boolean          @default(false)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  AdminDashboard AdminDashboard[]
+
+  @@map("admins")
+}
+
+model Customer {
+  id                String              @id @default(uuid())
+  name              String
+  email             String              @unique
+  profilePhoto      String              @default("https://cdn-icons-png.flaticon.com/512/3607/3607444.png")
+  user              User                @relation(fields: [email], references: [email], onDelete: Cascade)
+  phone             String?             @default("")
+  address           String?             @default("")
+  isDeleted         Boolean             @default(false)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  order             Order[]
+  cart              Cart[]
+  follow            Follow[]
+  customerDashboard CustomerDashboard[]
+  Wishlist          Wishlist[]
+  reviewItems       ReviewItem[]
+
+  @@map("customers")
+}
+
+model Vendor {
+  id              String            @id @default(uuid())
+  name            String
+  email           String            @unique
+  profilePhoto    String            @default("https://cdn-icons-png.flaticon.com/512/3607/3607444.png")
+  phone           String            @default("")
+  user            User              @relation(fields: [email], references: [email], onDelete: Cascade)
+  isDeleted       Boolean           @default(false)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  shop            Shop[]
+  vendorDashboard VendorDashboard[]
+  order           Order[]
+
+  @@map("vendors")
+}
+
+model CustomerDashboard {
+  id           String   @id @default(uuid())
+  customerId   String
+  customer     Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  totalOrders  Int      @default(0)
+  totalSpent   Float    @default(0)
+  totalSaved   Float    @default(0)
+  totalReviews Int      @default(0)
+  totalFollows Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("customerDashboards")
+}
+
+model VendorDashboard {
+  id            String   @id @default(uuid())
+  vendorId      String
+  vendor        Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  totalOrders   Int      @default(0)
+  totalEarnings Float    @default(0)
+  totalProducts Int      @default(0)
+  totalReviews  Int      @default(0)
+  averageRating Float    @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("vendorDashboards")
+}
+
+model AdminDashboard {
+  id              String   @id @default(uuid())
+  adminId         String
+  admin           Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  totalUsers      Int      @default(0)
+  totalVendors    Int      @default(0)
+  totalCustomers  Int      @default(0)
+  totalOrders     Int      @default(0)
+  totalRevenue    Float    @default(0)
+  totalProducts   Int      @default(0)
+  totalCategories Int      @default(0)
+  totalShops      Int      @default(0)
+  totalReviews    Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("adminDashboards")
+}
+
+model Shop {
+  id          String     @id @default(uuid())
+  name        String
+  description String
+  logo        String     @default("https://thumbs.dreamstime.com/b/online-shop-vector-logo-business-online-shop-vector-logo-business-illustration-design-139333744.jpg")
+  banner      String     @default("https://t3.ftcdn.net/jpg/03/65/52/86/360_F_365528663_miV08QzGGVLqhRRQVQ4B9C9PtoTRJiSv.jpg")
+  status      ShopStatus @default(ACTIVE)
+  isActive    Boolean    @default(true)
+  isDeleted   Boolean    @default(false)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  vendorId    String
+  vendor      Vendor     @relation(fields: [vendorId], references: [id])
+  products    Product[]
+  followers   Follow[]
+  reviews     Review[]
+  order       Order[]
+  coupon      Coupon[]
+
+  @@map("shops")
+}
+
+model Category {
+  id          String    @id @default(uuid())
+  name        String
+  description String
+  image       String?
+  parentId    String?   // For nested categories
+  parent      Category? @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Category[] @relation("CategoryHierarchy")
+  isDeleted   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  products    Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id                String    @id @default(uuid())
+  name              String
+  description       String
+  price             Float
+  images            String[]
+  discount          Float     @default(0)
+  quantity          Int
+  rating            Float     @default(0)
+  color             String[]  @default([])
+  size              String[]  @default([])
+  features          String[]  @default([])
+  categoryId        String
+  category          Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  shopId            String
+  shop              Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  isDeleted         Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  brand             String?
+  model             String?
+  isFeatured       Boolean   @default(false)
+  warrantyDuration  Int? // Duration in months
+  warrantyStartDate DateTime? // When warranty begins
+  warrantyEndDate   DateTime? // When warranty expires
+  warrantyTerms     String? // Detailed warranty terms
+  warrantyStatus    String? // "Active", "Expired", "Pending"
+  warrantyNumber    String?
+  soldCount         Int       @default(0)
+  cartItems      CartItem[]
+  orderItems     OrderItem[]
+  reviews        Review?
+  wishlistItem   WishlistItem[]
+  recentProduct  RecentProduct[]
+  flashSaleItems FlashSaleItem[]
+
+  @@map("products")
+}
+
+
+
+model Cart {
+  id         String     @id @default(uuid())
+  customerId String
+  customer   Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  cartItems  CartItem[]
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@map("carts")
+}
+
+model CartItem {
+  id        String   @id @default(uuid())
+  cartId    String
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("cartItems")
+}
+
+model Wishlist {
+  id           String         @id @default(uuid())
+  customerId   String
+  customer     Customer       @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  WishlistItem WishlistItem[]
+
+  @@map("wishlists")
+}
+
+model WishlistItem {
+  id         String   @id @default(uuid())
+  wishlistId String
+  wishlist   Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity   Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("wishlistItems")
+}
+
+model Follow {
+  id         String   @id @default(uuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  shopId     String
+  shop       Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([customerId, shopId])
+  @@map("follows")
+}
+
+enum TransactionMethod {
+  CASH_ON_DELIVERY
+  CREDIT_CARD
+  DEBIT_CARD
+  NET_BANKING
+  UPI
+}
+
+enum TransactionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+model Transaction {
+  id            String            @id @default(uuid())
+  orderId       String            @unique
+  order         Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  amount        Float
+  transactionId String
+  status        TransactionStatus @default(PENDING)
+  method        TransactionMethod @default(NET_BANKING)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@map("transactions")
+}
+
+enum PaymentStatus {
+  PAID
+  UNPAID
+}
+
+model Order {
+  id                String            @id @default(uuid())
+  customerId        String
+  customer          Customer          @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  shopId            String
+  shop              Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  vendorId          String
+  vendor            Vendor            @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  quantity          Int
+  totalAmount       Float
+  discount          Float             @default(0)
+  orderNumber       String            @unique
+  status            OrderStatus       @default(PENDING)
+  paymentStatus     PaymentStatus     @default(UNPAID)
+  orderShippingType OrderShippingType
+  name              String
+  phone             String
+  email             String
+  address           String
+  city              String
+  state             String
+  country           String
+  zipCode           String
+  note              String?
+  appliedCoupon     String?
+  terms             Boolean
+  isDeleted         Boolean           @default(false)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  isReview          Boolean           @default(false)
+  orderItems        OrderItem[]
+  couponItem        CouponItem?
+  transaction       Transaction?
+
+  @@map("orders")
+}
+
+enum OrderShippingType {
+  DELIVERY
+  PICK_UP
+}
+
+model OrderItem {
+  id        String   @id @default(uuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("orderItems")
+}
+
+model Coupon {
+  id         String       @id @default(uuid())
+  shopId     String
+  Shop       Shop         @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  isDeleted  Boolean      @default(false)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  couponItem CouponItem[]
+
+  @@map("coupons")
+}
+
+model CouponItem {
+  id         String   @id @default(uuid())
+  discount   Float
+  expiryDate DateTime
+  couponId   String
+  coupon     Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  orderId    String?  @unique
+  order      Order?   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  code       String   @unique
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("couponItems")
+}
+
+model FlashSale {
+  id             String          @id @default(uuid())
+  name           String
+  description    String
+  image          String
+  startDateTime  DateTime
+  endDateTime    DateTime
+  isDeleted      Boolean         @default(false)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  flashSaleItems FlashSaleItem[]
+
+  @@map("flashSales")
+}
+
+model FlashSaleItem {
+  id          String    @id @default(uuid())
+  flashSaleId String
+  flashSale   FlashSale @relation(fields: [flashSaleId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  discount    Float
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("flashSaleItems")
+}
+
+model Review {
+  id          String       @id @default(uuid())
+  productId   String       @unique
+  product     Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  isDeleted   Boolean      @default(false)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  Shop        Shop         @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  shopId      String
+  reviewItems ReviewItem[]
+
+  @@map("reviews")
+}
+
+model ReviewItem {
+  id         String   @id @default(uuid())
+  reviewId   String
+  review     Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  rating     Float
+  comment    String
+  images     String[] @default([])
+  isDeleted  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("reviewItems")
+}
+
+model BecomeVendorRequest {
+  id        String                    @id @default(uuid())
+  name      String
+  email     String
+  phone     String
+  address   String
+  reason    String
+  status    BecomeVendorRequestStatus @default(PENDING)
+  isDeleted Boolean                   @default(false)
+  createdAt DateTime                  @default(now())
+  updatedAt DateTime                  @updatedAt
+
+  @@map("becomeVendorRequests")
+}
+
+model RecentProduct {
+  id         String   @id @default(uuid())
+  customerId String
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  viewedAt   DateTime @default(now())
+
+  @@unique([customerId, productId])
+  @@index([customerId])
+  @@map("recentProducts")
+}
+
+enum Role {
+  ADMIN
+  SUPER_ADMIN
+  VENDOR
+  CUSTOMER
+}
+
+enum UserStatus {
+  ACTIVE
+  BLOCKED
+  DELETED
+  SUSPENDED
+}
+
+enum OrderStatus {
+  CONFIRMED
+  DELIVERED
+  CANCELLED
+  SHIPPED
+  PENDING
+}
+
+enum BecomeVendorRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ShopStatus {
+  ACTIVE
+  RESTRICTED
+  DELETED
+  SUSPENDED
+}
