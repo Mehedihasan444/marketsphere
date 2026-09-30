@@ -1,5 +1,5 @@
 {
-  "name": "@marketsphere/server",
+  "name": "@marketsphere/api",
   "version": "1.0.0",
   "private": true,
   "description": "MarketSphere API — Express + TypeScript + Prisma + PostgreSQL",

@@ -5,24 +5,23 @@
   "description": "MarketSphere — multi-vendor e-commerce platform (Turborepo monorepo)",
   "license": "MIT",
   "workspaces": [
-    "client",
-    "server"
+    "apps/*"
   ],
   "scripts": {
     "dev": "turbo run dev",
-    "dev:client": "turbo run dev --filter @marketsphere/client",
-    "dev:server": "turbo run dev --filter @marketsphere/server",
+    "dev:web": "turbo run dev --filter @marketsphere/web",
+    "dev:api": "turbo run dev --filter @marketsphere/api",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
-    "clean": "turbo run clean && rm -rf node_modules .turbo client/dist server/dist",
+    "clean": "turbo run clean && rm -rf node_modules .turbo apps/web/dist apps/api/dist",
     "turbo": "turbo",
-    "db:generate": "npm run prisma:generate --workspace @marketsphere/server",
-    "db:migrate": "npm run prisma:migrate --workspace @marketsphere/server",
-    "db:deploy": "npm run prisma:deploy --workspace @marketsphere/server",
-    "db:studio": "npm run prisma:studio --workspace @marketsphere/server",
-    "db:push": "npm run prisma:push --workspace @marketsphere/server"
+    "db:generate": "npm run prisma:generate --workspace @marketsphere/api",
+    "db:migrate": "npm run prisma:migrate --workspace @marketsphere/api",
+    "db:deploy": "npm run prisma:deploy --workspace @marketsphere/api",
+    "db:studio": "npm run prisma:studio --workspace @marketsphere/api",
+    "db:push": "npm run prisma:push --workspace @marketsphere/api"
   },
   "devDependencies": {
     "turbo": "^2.11.5"
@@ -36,11 +35,10 @@
   },
   "packageManager": "npm@12.0.1",
   "allowScripts": {
-    "esbuild@0.28.2": true,
-    "esbuild@0.25.12": true,
-    "prisma@6.19.3": true,
-    "@prisma/client@6.19.3": true,
-    "@prisma/engines@6.19.3": true,
+    "esbuild": true,
+    "prisma": true,
+    "@prisma/client": true,
+    "@prisma/engines": true,
     "core-js": false
   }
 }
