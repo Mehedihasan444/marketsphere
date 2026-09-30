@@ -1,0 +1,122 @@
+
+import { Alert, Empty, Skeleton, Spin } from "antd";
+import ProductCard from "../../../../Components/Shared/ProductCard";
+import { TProduct } from "../../../../Interface";
+import { useState, useEffect, useRef } from "react";
+import { useGetProductsQuery } from "../../../../Redux/Features/Product/productApi";
+
+const UnAuthorizedUserProducts = () => {
+
+  const [page, setPage] = useState(1); // Track the current page
+  const [products, setProducts] = useState<TProduct[]>([]); // Store fetched products
+  const [hasMore, setHasMore] = useState(true); // Check if more products are available
+  const { data, isLoading, error, isFetching } = useGetProductsQuery({ page }, {
+    skip: !hasMore, // Skip API call if no more products
+  });
+
+  const observerRef = useRef<HTMLDivElement | null>(null); // Reference for the observer
+
+  // Update products and pagination state when data changes
+  useEffect(() => {
+    if (data?.data?.data) {
+      setProducts((prevProducts) => [...prevProducts, ...data.data.data]); // Append new products
+      setHasMore(data.data.data.length > 0); // Check if more products are available
+    }
+  }, [data]);
+
+  // Infinite scroll logic using Intersection Observer
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isFetching) {
+          setPage((prevPage) => prevPage + 1); // Load next page when user scrolls to the end
+        }
+      },
+      { threshold: 1.0 }
+    );
+
+    if (observerRef.current) {
+      observer.observe(observerRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observer.unobserve(observerRef.current);
+      }
+    };
+  }, [hasMore, isFetching]);
+
+  // Loading Spinner
+  if (isLoading && page === 1) {
+    return (
+      <div className="bg-white  p-4 mt-4 shadow rounded-xl">
+        <div className="py-4">
+          <Skeleton.Input style={{ width: 200 }} active />
+          <Skeleton.Input style={{ width: '100%', marginTop: 10 }} active />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-2 items-center">
+          {Array(6).fill(0).map((_, index) => (
+            <Skeleton key={index} active />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Error Alert
+  if (error) {
+    return (
+      <div className="flex justify-center items-center h-[50vh]">
+        <Alert
+          message="Error Loading Products"
+          description="Failed to load products."
+          type="error"
+          showIcon
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className=" max-w-7xl mx-auto p-4 mt-4  rounded-xl">
+      {/* Header */}
+      <div className="py-4 flex items-center justify-between">
+        {/* <h2 className="text-xl font-semibold ">Just For You</h2> */}
+        <h2 className="text-3xl font-bold text-gray-800 pb-4">Just For You</h2>
+        <a href="/products" className="text-gray-500 hover:text-blue-700 text-sm">see all →</a>
+      </div>
+
+      {/* Product Grid */}
+      <div className="flex justify-center items-center">
+
+        {
+          products.length === 0 ?
+           <div className="py-20">
+            <Empty
+              description="No featured products available"
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+            />
+          </div> :
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 items-center ">
+              {products?.map((product: TProduct, index: number) => (
+                <ProductCard product={product} key={index} />
+              ))}
+            </div>
+        }
+      </div>
+
+      {/* Infinite Scroll Loader */}
+      {hasMore && (
+        <div
+          ref={observerRef}
+          className="flex justify-center items-center py-4"
+        >
+          <Spin tip="Loading more products..." />
+        </div>
+      )}
+    </div>
+  );
+};
+
+
+export default UnAuthorizedUserProducts;

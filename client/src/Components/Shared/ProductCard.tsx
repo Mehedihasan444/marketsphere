@@ -1,0 +1,236 @@
+import React from "react";
+import { Card, Rate, Typography, Tooltip, message } from "antd";
+import { CheckCircleOutlined, CloseCircleOutlined } from "@ant-design/icons";
+import { FaRegHeart } from "react-icons/fa";
+import { IoCartOutline, IoEyeOutline, IoLayersOutline } from "react-icons/io5";
+import { Link, useNavigate } from "react-router-dom";
+import { TProduct } from "../../Interface";
+import { useAddToCartMutation } from "../../Redux/Features/Cart/cartApi";
+import { useAppSelector } from "../../Redux/hook";
+import { useAddToWishlistMutation } from "../../Redux/Features/Wishlist/wishlistApi";
+import { useAddRecentViewProductMutation } from "../../Redux/Features/RecentViewProducts/recentViewProductsApi";
+
+const { Meta } = Card;
+const { Text } = Typography;
+
+const ProductCard: React.FC<{ product: TProduct }> = ({ product }) => {
+  const user = useAppSelector((state) => state.auth.user);
+  const [addToCart] = useAddToCartMutation();
+  const [addToWishlist] = useAddToWishlistMutation()
+  const navigate = useNavigate();
+  const [addRecentViewProduct] = useAddRecentViewProductMutation()
+
+  // handle add to cart
+  const handleAddToCart = async (productId: string) => {
+    if (!user) {
+      message.info("Please login to add product to cart");
+    } else {
+
+      try {
+        const res = await addToCart({ userEmail: user?.email, productId });
+
+        if (res?.data?.success) {
+          message.success("Product added to cart");
+        } else if (res.error) {
+          if ('data' in res.error) {
+            // For FetchBaseQueryError, safely access the `data` property
+            const errorMessage = (res.error.data as { message?: string })?.message || "Product add to cart error occurred.";
+            message.error(errorMessage);
+          } else if ('message' in res.error) {
+            // For SerializedError, handle the `message` property
+            message.error(res.error.message || "Product add to cart error occurred.");
+          } else {
+            // Handle unknown error types
+            message.error("An unknown error occurred.");
+          }
+        }
+      } catch (error) {
+        console.log(error);
+        message.error("Failed to add product to cart");
+      }
+    }
+  };
+
+  // Add to wishlist
+  const handleAddToWishlist = async (productId: string) => {
+    if (!user) {
+      message.info("Please login to add product to wishlist");
+    } else {
+
+      try {
+        const res = await addToWishlist({ userEmail: user?.email, productId });
+
+        if (res?.data?.success) {
+          message.success("Product added to wishlist");
+        } else if (res.error) {
+          if ('data' in res.error) {
+            // For FetchBaseQueryError, safely access the `data` property
+            const errorMessage = (res.error.data as { message?: string })?.message || "Product add to wishlist error occurred.";
+            message.error(errorMessage);
+          } else if ('message' in res.error) {
+            // For SerializedError, handle the `message` property
+            message.error(res.error.message || "Product add to wishlist error occurred.");
+          } else {
+            // Handle unknown error types
+            message.error("An unknown error occurred.");
+          }
+        }
+      } catch (error) {
+        console.log(error);
+        message.error("Failed to add product to wishlist");
+      }
+    }
+  };
+
+  // Add to compare
+  const addToCompare = () => {
+    navigate(`/compare-products/${product.id}`);
+  };
+
+  // add recent view product
+  const handleAddRecentViewProduct = async (productId: string) => {
+    try {
+      await addRecentViewProduct({ productId });
+    } catch (error) {
+      console.log(error);
+      message.error("Failed to add product to recent view product");
+    }
+
+  }
+  return (
+    <Card
+      // hoverable
+      style={{
+        // width: 240,
+        position: "relative",
+        overflow: "hidden",
+      }}
+      cover={
+        <div className="relative flex justify-center items-center">
+          <div className="flex justify-center items-center">
+            <img
+              alt={product.name}
+              src={product.images[0]}
+              style={{ height: 200, objectFit: "cover" }}
+              className="w-full hover:scale-105 transition-transform duration-300"
+            />
+          </div>
+          {/* Discount Badge */}
+          {product.discount > 0 && (
+            <div
+              style={{
+                position: "absolute",
+                top: 10,
+                left: 10,
+                backgroundColor: "#ff4d4f", // Red badge
+                color: "white",
+                padding: "4px 8px",
+                borderRadius: "12px",
+                fontWeight: "bold",
+                fontSize: "12px",
+              }}
+            >
+              {`-${product.discount}%`}
+            </div>
+          )}
+        </div>
+      }
+      onClick={() => handleAddRecentViewProduct(product.id)}
+      className="shadow hover:shadow-lg group"
+    >
+      {/* Hover icons */}
+      <div
+        className="absolute top-3 right-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10"
+      >
+        <Tooltip title="Add to Wishlist">
+          <div 
+            onClick={(e) => {
+              e.stopPropagation();
+              handleAddToWishlist(product.id);
+            }}
+            className="bg-white rounded-full p-2 shadow-md hover:bg-blue-50 cursor-pointer transition-all duration-200 hover:scale-110"
+          >
+            <FaRegHeart style={{ fontSize: 16, color: "#1890ff" }} />
+          </div>
+        </Tooltip>
+        <Tooltip title="View Details">
+          <Link 
+            to={`/products/${product.id}`}
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-full p-2 shadow-md hover:bg-blue-50 transition-all duration-200 hover:scale-110 flex items-center justify-center"
+          >
+            <IoEyeOutline style={{ fontSize: 18, color: "#1890ff" }} />
+          </Link>
+        </Tooltip>
+        <Tooltip title="Compare">
+          <div
+            onClick={(e) => {
+              e.stopPropagation();
+              addToCompare();
+            }}
+            className="bg-white rounded-full p-2 shadow-md hover:bg-blue-50 cursor-pointer transition-all duration-200 hover:scale-110"
+          >
+            <IoLayersOutline style={{ fontSize: 18, color: "#1890ff" }} />
+          </div>
+        </Tooltip>
+      </div>
+
+      <div className="" >
+        <div className="cursor-pointer group" onClick={() => navigate(`/products/${product.id}`)}>
+          <Meta
+            title={
+              <span className="text-black group-hover:text-blue-800 transition-colors duration-200">
+                {product.name}
+              </span>
+            }
+          />
+        </div>
+        <div style={{ marginTop: 10 }}>
+          {/* Rating and Reviews */}
+          <Rate disabled defaultValue={product.rating} style={{ fontSize: 14 }} />
+          <Text type="secondary" style={{ marginLeft: 8 }}>
+            {product.reviews?.reviewItems?.length || 0} review
+            {product.reviews?.reviewItems?.length > 1 ? "s" : ""}
+          </Text>
+        </div>
+        {/* Price */}
+        <Text strong style={{ display: "block", marginTop: 8, fontSize: 16 }}>
+          <span className="text-blue-600">
+            ${(Number(product.price.toFixed(2)) - product.discount).toFixed(2)}
+          </span>
+
+          {product.discount > 0 && <span className="ml-2" style={{ textDecoration: "line-through", color: "gray" }}>{`$${product.price.toFixed(2)}`}</span>}
+        </Text>
+        {/* Stock Status */}
+        <div style={{ marginTop: 5 }}>
+          {product.quantity > 0 ? (
+            <Text type="success">
+              <CheckCircleOutlined /> In stock
+            </Text>
+          ) : (
+            <Text type="danger">
+              <CloseCircleOutlined /> Out of stock
+            </Text>
+          )}
+        </div>
+        <div style={{ marginTop: 5 }}>
+          <Text type="secondary">
+            <IoCartOutline className="inline-block mr-1" size={16} />
+            {product.soldCount || 0} sold
+          </Text>
+        </div>
+        <div className="absolute bottom-0 right-0 bg-blue-600 pl-6 pt-6 pr-3 pb-3 rounded-tl-full  cursor-pointer hover:bg-blue-700 transition-colors duration-300 flex items-end">
+          <IoCartOutline
+            className=""
+            onClick={() => handleAddToCart(product.id)}
+            style={{ fontSize: 35, color: "#ffff" }}
+          />
+        </div>
+      </div>
+    </Card>
+
+
+  );
+};
+
+export default ProductCard;
