@@ -206,9 +206,8 @@ export async function seedNestedCategories() {
   }
 }
 
-// Run the seed function
-seedNestedCategories()
-  .catch((error) => {
-    console.error(error);
-    process.exit(1);
-  });
+// NOTE: this module must NOT self-invoke on import.
+// `server.ts` already calls `seedNestedCategories()` inside the listen callback,
+// wrapped in try/catch. A previous top-level self-invocation here ran at import
+// time and called `process.exit(1)` whenever the database was unreachable,
+// which killed the entire API process on every boot without a live DB.

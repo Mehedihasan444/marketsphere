@@ -1,13 +1,17 @@
 {
-  "name": "marketsphere",
+  "name": "@marketsphere/client",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
+  "description": "MarketSphere web client — React 18 + Vite + Redux Toolkit",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "typecheck": "tsc -b",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "lint:fix": "eslint . --fix",
+    "preview": "vite preview",
+    "clean": "rm -rf dist node_modules/.tmp"
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.4.0",
