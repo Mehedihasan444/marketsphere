@@ -54,31 +54,32 @@ marketsphere/                 ← monorepo root
 ├── README.md
 ├── .gitignore
 │
-├── client/                   ← @marketsphere/client  (React 18 + Vite)
-│   ├── package.json
-│   ├── vite.config.ts
-│   ├── index.html
-│   ├── .env.example
-│   ├── public/
-│   └── src/
-│
-└── server/                   ← @marketsphere/server  (Express + Prisma)
-    ├── package.json
-    ├── tsconfig.json
-    ├── eslint.config.mjs
-    ├── .env.example
-    ├── prisma/
-    │   ├── schema.prisma
-    │   └── migrations/
-    └── src/
+├── apps/                      ← workspace root (workspaces: ["apps/*"])
+│   ├── web/                   ← @marketsphere/web  (React 18 + Vite)
+│   │   ├── package.json
+│   │   ├── vite.config.ts
+│   │   ├── index.html
+│   │   ├── .env.example
+│   │   ├── public/
+│   │   └── src/
+│   │
+│   └── api/                   ← @marketsphere/api  (Express + Prisma)
+│       ├── package.json
+│       ├── tsconfig.json
+│       ├── eslint.config.mjs
+│       ├── .env.example
+│       ├── prisma/
+│       │   ├── schema.prisma
+│       │   └── migrations/
+│       └── src/
 ```
 
 **Workspace packages**
 
 | Package | Path | Description |
 | --- | --- | --- |
-| `@marketsphere/client` | `client/` | React 18 SPA (Vite, Redux Toolkit, Ant Design, Tailwind) |
-| `@marketsphere/server` | `server/` | Express REST API (TypeScript, Prisma, PostgreSQL) |
+| `@marketsphere/web` | `apps/web/` | React 18 SPA (Vite, Redux Toolkit, Ant Design, Tailwind) |
+| `@marketsphere/api` | `apps/api/` | Express REST API (TypeScript, Prisma, PostgreSQL) |
 
 ---
 
@@ -86,7 +87,7 @@ marketsphere/                 ← monorepo root
 
 Versions below are the **actually installed** versions in this repo.
 
-### Frontend — `client/`
+### Frontend — `apps/web/`
 
 | Package | Version |
 | --- | --- |
@@ -104,7 +105,7 @@ Versions below are the **actually installed** versions in this repo.
 | react-image-gallery | 1.4.0 |
 | localforage | 1.10.0 |
 
-### Backend — `server/`
+### Backend — `apps/api/`
 
 | Package | Version |
 | --- | --- |
@@ -150,11 +151,11 @@ Versions below are the **actually installed** versions in this repo.
 npm install
 
 # 2. Create the API environment file
-cp server/.env.example server/.env
-#    then edit server/.env and fill in your real values
+cp apps/api/.env.example apps/api/.env
+#    then edit apps/api/.env and fill in your real values
 
 # 3. Create the web environment file
-cp client/.env.example client/.env
+cp apps/web/.env.example apps/web/.env
 
 # 4. Generate the Prisma client
 npm run db:generate
@@ -178,8 +179,8 @@ The API health check is `GET /` → `{"Message":"Server is running.."}`.
 To run one side only:
 
 ```bash
-npm run dev:server
-npm run dev:client
+npm run dev:api
+npm run dev:web
 ```
 
 ---
@@ -190,9 +191,9 @@ All commands run from the repo root.
 
 | Script | Description |
 | --- | --- |
-| `npm run dev` | Run `dev` in every workspace (client + server), in parallel |
-| `npm run dev:client` | Run only the client dev server |
-| `npm run dev:server` | Run only the API dev server |
+| `npm run dev` | Run `dev` in every workspace (web + api), in parallel |
+| `npm run dev:web` | Run only the web dev server |
+| `npm run dev:api` | Run only the API dev server |
 | `npm run build` | Build all workspaces (cached) |
 | `npm run lint` | ESLint across all workspaces |
 | `npm run typecheck` | Type-check all workspaces without emitting |
@@ -207,9 +208,9 @@ All commands run from the repo root.
 
 ### Per-package scripts
 
-`client/` — `dev`, `build` (`tsc -b && vite build`), `typecheck`, `lint`, `lint:fix`, `preview`, `clean`
+`apps/web/` — `dev`, `build` (`tsc -b && vite build`), `typecheck`, `lint`, `lint:fix`, `preview`, `clean`
 
-`server/` — `dev`, `build`, `typecheck`, `start`, `lint`, `lint:fix`, `clean`, `prisma:generate`, `prisma:migrate`, `prisma:deploy`, `prisma:studio`, `prisma:push`
+`apps/api/` — `dev`, `build`, `typecheck`, `start`, `lint`, `lint:fix`, `clean`, `prisma:generate`, `prisma:migrate`, `prisma:deploy`, `prisma:studio`, `prisma:push`
 
 ---
 
@@ -221,10 +222,10 @@ All commands run from the repo root.
 VITE_SERVER_URL=http://localhost:5000/api/v1
 ```
 
-### `server/.env`
+### `apps/api/.env`
 
-These names match `server/src/app/config/index.ts` exactly. Copy from
-`server/.env.example` and fill in real values.
+These names match `apps/api/src/app/config/index.ts` exactly. Copy from
+`apps/api/.env.example` and fill in real values.
 
 ```env
 # Runtime
@@ -278,14 +279,14 @@ PAYMENT_VERIFY_URL=
 RESET_PASS_UI_LINK=/reset-password
 ```
 
-> `CORS` on the API is driven by `CLIENT_URL` (see `server/src/app.ts`), so it must
-> match the client's origin for cookie-based auth to work.
+> `CORS` on the API is driven by `CLIENT_URL` (see `apps/api/src/app.ts`), so it must
+> match the web app's origin for cookie-based auth to work.
 
 ---
 
 ## Database
 
-PostgreSQL via Prisma ORM. Schema: [`server/prisma/schema.prisma`](server/prisma/schema.prisma).
+PostgreSQL via Prisma ORM. Schema: [`apps/api/prisma/schema.prisma`](apps/api/prisma/schema.prisma).
 
 **26 models** — `User`, `Admin`, `Customer`, `Vendor`, `CustomerDashboard`,
 `VendorDashboard`, `AdminDashboard`, `Shop`, `Category`, `Product`, `Cart`,
@@ -318,7 +319,7 @@ Apply in production with `npm run db:deploy`.
 
 Base path: **`/api/v1`** (plus a root health check at `GET /`).
 
-Registered in [`server/src/app/routes/index.ts`](server/src/app/routes/index.ts):
+Registered in [`apps/api/src/app/routes/index.ts`](apps/api/src/app/routes/index.ts):
 
 | Path | Module |
 | --- | --- |
@@ -343,7 +344,7 @@ Registered in [`server/src/app/routes/index.ts`](server/src/app/routes/index.ts)
 | `/api/v1/wishlist` | Wishlist |
 | `/api/v1/recent-view-products` | Recently viewed |
 
-Each module lives in `server/src/app/modules/<name>/` and follows the same
+Each module lives in `apps/api/src/app/modules/<name>/` and follows the same
 `*.controller.ts` / `*.service.ts` / `*.route.ts` (+ optional `*.validation.ts`) split.
 
 ---
@@ -351,7 +352,7 @@ Each module lives in `server/src/app/modules/<name>/` and follows the same
 ## Project Layout
 
 ```
-client/src/
+apps/web/src/
 ├── main.tsx                 # React root: Provider → PersistGate → RouterProvider
 ├── App.tsx
 ├── Routes/                  # React Router route tree
@@ -365,7 +366,7 @@ client/src/
 │   └── DashboardPages/      # AdminPages / VendorPages / CustomerPages
 └── Utils/
 
-server/src/
+apps/api/src/
 ├── server.ts                # bootstrap, listen, seeding, crash handlers
 ├── app.ts                   # express app: cors, parsers, /api/v1 mount
 ├── app/
@@ -400,7 +401,7 @@ Defined in `turbo.json`:
 Cache lives in `.turbo/` at the root. Useful commands:
 
 ```bash
-npx turbo run build --filter @marketsphere/server   # one package
+npx turbo run build --filter @marketsphere/api    # one package
 npx turbo run build --dry                           # show the plan
 npx turbo run build --force                          # ignore cache
 npm run clean                                       # nuke node_modules + .turbo
@@ -411,12 +412,12 @@ npm run clean                                       # nuke node_modules + .turbo
 ## Deployment
 
 Each app deploys independently — set **Root Directory** in your host to
-`client` or `server` respectively.
+`apps/web` or `apps/api` respectively.
 
-- **Client** — Vite static build → `client/dist`. `client/vercel.json` rewrites all
+- **Web** — Vite static build → `apps/web/dist`. `apps/web/vercel.json` rewrites all
   routes to `/` for client-side routing.
-- **Server** — `tsc` → `server/dist`, entry `dist/server.js` (matches
-  `server/vercel.json`). Set all variables from the
+- **API** — `tsc` → `apps/api/dist`, entry `dist/server.js` (matches
+  `apps/api/vercel.json`). Set all variables from the
   [Environment Variables](#environment-variables) section, and run
   `npm run db:deploy` against a managed PostgreSQL instance.
 
@@ -444,7 +445,7 @@ Things worth knowing, all verified in this repo:
    Without this, `prisma generate` and the esbuild binary are silently skipped
    and the build fails. `core-js` is explicitly denied.
 
-4. **Seeding no longer kills the API.** `server/src/utils/seed-nested-categories.ts`
+4. **Seeding no longer kills the API.** `apps/api/src/utils/seed-nested-categories.ts`
    used to self-invoke at import time and call `process.exit(1)` when the
    database was unreachable, which terminated the whole server on every boot
    without a live DB. Seeding is now only triggered from `server.ts`, inside a
@@ -465,8 +466,10 @@ Things worth knowing, all verified in this repo:
    containing the full history of both originals — all 164 frontend and 87
    backend commits are ancestors of `main` (255 commits total). Each commit's
    tree was rewritten with `git filter-repo --to-subdirectory-filter` so its
-   files live under `client/` and `server/`, which means per-file history
-   (`git log -- client/src/App.tsx`) works normally. The two original GitHub
+   files live under `client/` and `server/` as they were at merge time (they
+   have since moved to `apps/web/` and `apps/api/`, so use
+   `git log --follow -- apps/web/src/App.tsx` to trace a file across the
+   rename). The two original GitHub
    repos are now **stale** — do not push to them. Verbatim copies and bare
    mirrors of both live in
    `../_marketsphere-archive-20260930/` (see its `ARCHIVE.md`).

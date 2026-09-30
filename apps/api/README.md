@@ -1,6 +1,6 @@
-# @marketsphere/server
+# @marketsphere/api
 
-Express + Prisma REST API for MarketSphere, part of the [Turborepo monorepo](../README.md).
+Express + Prisma REST API for MarketSphere, part of the [Turborepo monorepo](../../README.md).
 
 ## Commands
 
@@ -17,7 +17,7 @@ npm run lint            # eslint .
 To run just this package from the root:
 
 ```bash
-npm run dev:server
+npm run dev:api
 ```
 
 ## Environment
@@ -82,4 +82,4 @@ Health check: `GET /` → `{"Message":"Server is running.."}`
 Set every variable from `.env.example` and run `npm run db:deploy` against a
 managed PostgreSQL instance.
 
-Full documentation is in the [root README](../README.md).
+Full documentation is in the [root README](../../README.md).

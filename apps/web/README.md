@@ -1,6 +1,6 @@
-# @marketsphere/client
+# @marketsphere/web
 
-React 18 + Vite frontend for MarketSphere, part of the [Turborepo monorepo](../README.md).
+React 18 + Vite frontend for MarketSphere, part of the [Turborepo monorepo](../../README.md).
 
 ## Commands
 
@@ -16,7 +16,7 @@ npm run lint       # eslint .
 To run just this package from the root:
 
 ```bash
-npm run dev:client
+npm run dev:web
 ```
 
 ## Environment
@@ -48,4 +48,4 @@ VITE_SERVER_URL=http://localhost:5000/api/v1
 routes to `/` so client-side routing works on refresh.
 
 Full documentation — setup, API routes, database schema, deployment — is in the
-[root README](../README.md).
+[root README](../../README.md).
