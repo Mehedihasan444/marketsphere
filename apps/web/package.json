@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "type": "module",
   "description": "MarketSphere web client — React 18 + Vite + Redux Toolkit",
+  "license": "MIT",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

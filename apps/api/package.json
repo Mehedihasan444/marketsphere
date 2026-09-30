@@ -4,7 +4,7 @@
   "private": true,
   "description": "MarketSphere API — Express + TypeScript + Prisma + PostgreSQL",
   "main": "dist/server.js",
-  "license": "ISC",
+  "license": "MIT",
   "scripts": {
     "postinstall": "prisma generate",
     "dev": "ts-node-dev --respawn --transpile-only ./src/server.ts",
